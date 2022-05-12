@@ -1,0 +1,15 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: grafana-nodes-updates
+spec:
+  host: REPLACE_HOST
+  port:
+    targetPort: https
+  tls:
+    termination: reencrypt
+  to:
+    kind: Service
+    name: grafana-nodes-updates
+    weight: 100
+  wildcardPolicy: None

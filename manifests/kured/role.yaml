@@ -1,0 +1,15 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kured
+rules:
+  # Allow kured to lock/unlock itself
+  - apiGroups:     ["extensions"]
+    resources:     ["daemonsets"]
+    resourceNames: ["kured"]
+    verbs:         ["update", "patch"]
+  - apiGroups:     ["apps"]
+    resources:     ["daemonsets"]
+    resourceNames: ["kured"]
+    verbs:         ["update", "patch"]

@@ -1,0 +1,19 @@
+---
+.prepare: &prepare
+  before_script:
+    - env | sort
+    - id
+    - echo "{\"auths\":{\"$REGISTRY\":{\"username\":\"$USER\",\"password\":\"$AUTH_TOKEN\"}}}" > /kaniko/.docker/config.json
+
+build-image:
+  stage: build
+  <<: *prepare
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  tags:
+    - run-as-root
+  script:
+    - make kaniko
+  rules:
+    - if: $CI_COMMIT_TAG

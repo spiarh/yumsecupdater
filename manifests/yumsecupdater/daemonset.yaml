@@ -1,0 +1,71 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: yumsecupdater
+spec:
+  updateStrategy:
+    # type: OnDelete
+    type: RollingUpdate
+  template:
+    spec:
+      initContainers:
+      - name: selinux
+        image: yumsecupdater
+        imagePullPolicy: Always
+        command:
+        - bash
+        - /selinux-module/install-selinux-module.sh
+        securityContext:
+          # Give permission to nsenter /proc/1/ns/mnt
+          privileged: true
+          runAsUser: 0
+        volumeMounts:
+        - mountPath: /host
+          name: host
+        - mountPath: /sys/fs/selinux
+          name: selinux
+          readOnly: true
+      containers:
+      - name: yumsecupdater
+        image: yumsecupdater
+        # imagePullPolicy: IfNotPresent
+        imagePullPolicy: Always
+        securityContext:
+          # Give permission to nsenter /proc/1/ns/mnt
+          privileged: true
+          runAsUser: 0
+        resources:
+          {}
+        args:
+          - --exclude-packages
+          # this list comes from openshift-install playbook
+          - atomic*,etcd,cri*,docker*,cockpit-*,corosync,kubernetes*,openshift*,origin*
+          - --dry-run=true
+        ports:
+        - containerPort: 9080
+          name: metrics
+        env:
+        # Pass in the name of the node for the metrics
+        - name: YUMSECUPDATER_NODE_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+      hostPID: true
+      hostIPC: true
+      restartPolicy: Always
+      serviceAccountName: yumsecupdater
+      # 5 minutes is the value in the app to let yum finish in case of interrupt.
+      terminationGracePeriodSeconds: 300
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master
+      volumes:
+      - hostPath:
+          path: /sys/fs/selinux
+          type: Directory
+        name: selinux
+      - hostPath:
+          path: /
+          type: Directory
+        name: host

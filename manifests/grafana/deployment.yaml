@@ -1,0 +1,113 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: grafana-nodes-updates
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  strategy:
+    type: Recreate
+  template:
+    spec:
+      containers:
+      - args:
+        - -config=/etc/grafana/grafana.ini
+        image: registry.redhat.io/openshift3/grafana:v3.11.272
+        imagePullPolicy: IfNotPresent
+        name: grafana
+        ports:
+        - containerPort: 3000
+          name: http
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 200m
+            memory: 200Mi
+          requests:
+            cpu: 50m
+            memory: 50Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/lib/grafana
+          name: grafana-storage
+        - mountPath: /etc/grafana/provisioning/datasources
+          name: grafana-datasources
+          readOnly: true
+        - mountPath: /etc/grafana/provisioning/dashboards
+          name: grafana-dashboards
+        - mountPath: /grafana-dashboard-definitions/0/nodes-updates
+          name: grafana-dashboard-nodes-updates
+          readOnly: true
+        - mountPath: /etc/grafana
+          name: grafana-config
+          readOnly: true
+      - args:
+        - -provider=openshift
+        - -https-address=:3000
+        - -http-address=
+        - -email-domain=*
+        - -upstream=http://localhost:3001
+        - '-openshift-sar={"resource": "namespaces", "verb": "get"}'
+        - '-openshift-delegate-urls={"/": {"resource": "namespaces", "verb": "get"}}'
+        - -tls-cert=/etc/tls/private/tls.crt
+        - -tls-key=/etc/tls/private/tls.key
+        - -client-secret-file=/var/run/secrets/kubernetes.io/serviceaccount/token
+        - -cookie-secret-file=/etc/proxy/secrets/session_secret
+        - -cookie-expire=24h
+        - -openshift-service-account=grafana
+        - -openshift-ca=/etc/pki/tls/cert.pem
+        - -openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        - -skip-auth-regex=^/metrics
+        image: registry.redhat.io/openshift3/oauth-proxy:v3.11.272
+        imagePullPolicy: IfNotPresent
+        name: grafana-proxy
+        ports:
+        - containerPort: 3000
+          name: https
+          protocol: TCP
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/tls/private
+          name: secret-grafana-tls
+        - mountPath: /etc/proxy/secrets
+          name: secret-grafana-proxy
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        node-role.kubernetes.io/infra: "true"
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: grafana
+      serviceAccountName: grafana
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - emptyDir: {}
+        name: grafana-storage
+      - name: grafana-datasources
+        secret:
+          defaultMode: 420
+          secretName: grafana-datasources
+      - configMap:
+          defaultMode: 420
+          name: grafana-dashboards
+        name: grafana-dashboards
+      - configMap:
+          defaultMode: 420
+          name: grafana-dashboard-nodes-updates
+        name: grafana-dashboard-nodes-updates
+      - name: grafana-config
+        secret:
+          defaultMode: 420
+          secretName: grafana-config
+      - name: secret-grafana-tls
+        secret:
+          defaultMode: 420
+          secretName: grafana-nodes-updates-tls
+      - name: secret-grafana-proxy
+        secret:
+          defaultMode: 420
+          secretName: grafana-proxy

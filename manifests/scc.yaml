@@ -1,0 +1,40 @@
+allowHostDirVolumePlugin: true
+allowHostIPC: true
+allowHostNetwork: false
+allowHostPID: true
+allowHostPorts: false
+allowPrivilegeEscalation: true
+allowPrivilegedContainer: true
+allowedCapabilities: null
+apiVersion: v1
+defaultAddCapabilities: null
+fsGroup:
+  type: MustRunAs
+groups:
+- system:authenticated
+kind: SecurityContextConstraints
+metadata:
+  name: node-update
+# priority: null
+readOnlyRootFilesystem: false
+requiredDropCapabilities: null
+# - KILL
+# - MKNOD
+# - SETUID
+# - SETGID
+runAsUser:
+  type: RunAsAny
+seLinuxContext:
+  type: RunAsAny
+supplementalGroups:
+  type: RunAsAny
+users:
+- system:serviceaccount:node-update:kured
+- system:serviceaccount:node-update:yumsecupdater
+volumes:
+- configMap
+- downwardAPI
+- emptyDir
+- persistentVolumeClaim
+- projected
+- secret

@@ -1,0 +1,19 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app: kured
+  name: kured
+spec:
+  endpoints:
+  - interval: 30s
+    port: metrics
+    scheme: http
+    targetPort: 0
+  namespaceSelector:
+    matchNames:
+    - node-update
+  selector:
+    matchLabels:
+      app: kured

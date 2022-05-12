@@ -1,0 +1,48 @@
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: kured
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    spec:
+      containers:
+        - name: kured
+          image: kured
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            # Give permission to nsenter /proc/1/ns/mnt
+            privileged: true # Give permission to nsenter /proc/1/ns/mnt
+          resources:
+            {}
+          command:
+          - /usr/bin/kured
+          args:
+          - --ds-name=kured
+          - --ds-namespace=node-update
+          - --period=1h
+          - --drain-timeout=10m
+          - --skip-wait-for-delete-timeout=600
+          - --lock-release-delay=5m
+          - --lock-ttl=30m
+          - --reboot-days=mo,tu,we,th
+          - --start-time=08:00:00
+          - --end-time=16:00:00
+          ports:
+          - containerPort: 8080
+            name: metrics
+          env:
+          # Pass in the name of the node on which this pod is scheduled
+          # for use with drain/uncordon operations and lock acquisition
+          - name: KURED_NODE_ID
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+      hostPID: true
+      restartPolicy: Always
+      serviceAccountName: kured
+      tolerations:
+      - effect: NoSchedule
+        key: node-role.kubernetes.io/master

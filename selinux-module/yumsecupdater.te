@@ -1,0 +1,10 @@
+module yumsecupdater 1.0;
+
+require {
+    type spc_t;
+    type rpm_script_t;
+    class process transition;
+}
+
+#============= spc_t ==============
+allow spc_t rpm_script_t:process transition;
