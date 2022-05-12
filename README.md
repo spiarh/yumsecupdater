@@ -1,7 +1,7 @@
 # yumsecupdater
 
-Note: I built this tool for OpenShift 3.11 clusters but they are all
-decommissioned now so this tool is not used anymore.
+**Note: I built this tool for OpenShift 3.11 clusters but they are all
+decommissioned now so this tool is not used anymore.**
 
 `yumsecupdater` is a tool to keep an openshift/kubernetes node running
 on rhel 7 (only version tested) up-to-date. It has to be deployed
